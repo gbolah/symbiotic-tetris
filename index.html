@@ -1,644 +1,245 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Symbiotic Tetris — Neon Arcade</title>
-<style>
-  :root{
-    --neon:#00ff88;
-    --dark:#071017;
-    --panel: rgba(0,0,0,0.45);
-    --muted: #bfeed6;
-  }
-  html,body{height:100%;margin:0;background:linear-gradient(180deg, #00110a 0%, #011514 60%);font-family:Inter,system-ui,Arial;}
-  .wrap{
-    min-height:100%; display:flex; align-items:center; justify-content:center; flex-direction:column; gap:12px;
-    padding:18px;
-  }
-
-  header{
-    width:100%; max-width:1000px; display:flex; align-items:center; justify-content:space-between; gap:12px;
-    color:var(--neon);
-  }
-  .title{
-    font-size:28px; font-weight:900; letter-spacing:0.6px; text-shadow:0 0 12px rgba(0,255,136,0.25);
-  }
-  .controls{display:flex; gap:8px; align-items:center;}
-  .controls input{padding:8px 10px; border-radius:8px; border:1px solid rgba(255,255,255,0.06); background:transparent; color:var(--muted);}
-  .controls button{padding:8px 12px;border-radius:10px;border:none;background:var(--neon);color:#001; font-weight:700;cursor:pointer; box-shadow:0 6px 18px rgba(0,255,136,0.08)}
-  .panel{
-    width:100%; max-width:1000px; display:flex; gap:16px; align-items:flex-start; justify-content:center;
-  }
-
-  /* Game area */
-  .game-card{
-    background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
-    border-radius:14px; padding:18px; box-shadow:0 10px 40px rgba(0,0,0,0.6);
-    border:1px solid rgba(0,255,136,0.08);
-  }
-
-  #canvasWrap{position:relative; width:calc(var(--cell)*10); height:calc(var(--cell)*20);}
-  canvas#t{ display:block; background: rgba(0,0,0,0.6); border-radius:8px; box-shadow: 0 10px 40px rgba(0,255,136,0.06) inset; }
-
-  /* HUD */
-  .hud{ margin-left:16px; color:var(--muted); display:flex; flex-direction:column; gap:10px; width:260px;}
-  .hud .big{ color:var(--neon); font-weight:800; font-size:18px; text-shadow:0 0 8px rgba(0,255,136,0.12); }
-  .hud .small{ font-size:13px; color:#b7eec8; opacity:0.9; }
-  .hud .muted{ font-size:12px; color:#a8e9c4; opacity:0.7; }
-
-  /* Overlay screens */
-  .overlay{
-    position:fixed; inset:0; display:none; align-items:center; justify-content:center;
-    background:linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.7));
-    z-index:40;
-  }
-  .sheet{ background:linear-gradient(180deg,#02120a,#011d12); padding:28px; border-radius:12px; text-align:center; color:var(--neon); box-shadow:0 30px 80px rgba(0,0,0,0.6); border:1px solid rgba(0,255,136,0.08)}
-  .sheet h2{ margin:0 0 8px; font-size:36px; }
-  .sheet p{ margin:8px 0 16px; color:var(--muted); font-size:16px}
-  .sheet button{ padding:10px 16px; background:var(--neon); border-radius:10px; border:none; color:#001; font-weight:800; cursor:pointer; margin:6px}
-
-  /* particle canvas under main (large subtle grid) */
-  #bgCanvas{ position:fixed; inset:0; z-index:0; pointer-events:none; filter:blur(8px) saturate(1.2) contrast(0.95); opacity:0.14; }
-  /* responsive tweaks */
-  @media(max-width:900px){
-    .panel{flex-direction:column;align-items:center}
-    .hud{ width:100%; max-width:360px; order:2 }
-    .game-card{ order:1 }
-  }
-</style>
+  <meta charset="UTF-8">
+  <title>Symbiotic Tetris</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      width: 100%;
+      background: radial-gradient(circle at center, rgba(0, 255, 136, 0.25), rgba(0,0,0,0.95));
+      font-family: Arial, sans-serif;
+      color: white;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    h1 {
+      font-size: 60px;
+      margin-bottom: 10px;
+      color: #00ff88;
+      text-shadow: 0 0 10px #00ff88, 0 0 20px #00ff88;
+    }
+    #overlay {
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+      background: rgba(0,0,0,0.6);
+      z-index: 2;
+    }
+    #overlay input {
+      padding: 10px;
+      margin-top: 15px;
+      font-size: 18px;
+      border-radius: 8px;
+      border: 1px solid #00ff88;
+      text-align: center;
+    }
+    button {
+      margin-top: 20px;
+      padding: 12px 24px;
+      font-size: 20px;
+      cursor: pointer;
+      border: none;
+      border-radius: 10px;
+      background: #00ff88;
+      color: black;
+      font-weight: bold;
+      box-shadow: 0 0 15px #00ff88;
+    }
+    button:hover {
+      background: #00cc6f;
+    }
+    canvas {
+      border: 2px solid #00ff88;
+      box-shadow: 0 0 20px #00ff88;
+      background: #111;
+    }
+  </style>
 </head>
 <body>
-  <!-- animated soft neon background (particles/grid) -->
-  <canvas id="bgCanvas"></canvas>
-
-  <div class="wrap">
-    <header>
-      <div class="title">Symbiotic Tetris — Neon Arcade</div>
-      <div class="controls">
-        <input id="username" placeholder="username (save locally)" />
-        <button id="saveBtn">Save</button>
-        <button id="muteBtn">Mute</button>
-      </div>
-    </header>
-
-    <div class="panel">
-      <div class="game-card" style="position:relative;">
-        <!-- canvasWrap with dynamic CSS variable for cell size -->
-        <div id="canvasWrap" style="--cell:36px">
-          <canvas id="t"></canvas>
-        </div>
-      </div>
-
-      <div class="hud">
-        <div class="big" id="playerLabel">Player: —</div>
-        <div class="small" id="scoreLabel">Score: 0</div>
-        <div class="small" id="levelLabel">Level: 0</div>
-        <div class="small" id="linesLabel">Lines: 0</div>
-        <div class="muted">Controls: ← → Move • ↑ Rotate • ↓ Hold = Fast • Space = Hard Drop</div>
-      </div>
-    </div>
+  <h1>Symbiotic Tetris</h1>
+  <div id="overlay">
+    <p>Enter a username to start</p>
+    <input type="text" id="usernameInput" placeholder="Username"/>
+    <button onclick="saveUsername()">Save & Play</button>
   </div>
 
-  <!-- overlays -->
-  <div id="gameOver" class="overlay">
-    <div class="sheet">
-      <h2>⚡ GAME OVER ⚡</h2>
-      <p id="goText">You scored 0</p>
-      <button id="retryBtn">Restart</button>
-    </div>
-  </div>
+  <canvas id="tetris" width="360" height="720"></canvas>
 
-  <div id="winOverlay" class="overlay">
-    <div class="sheet">
-      <h2>🏆 VICTORY!</h2>
-      <p id="winText">You reached Level 10 — Legendary!</p>
-      <button id="winRestart">Play Again</button>
-    </div>
-  </div>
+  <script type="module">
+    import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
 
-<script>
-/* =========================
-   Supabase + Config
-   ========================= */
-const SUPABASE_URL = 'https://jzofwfixzsotrcmrxlsx.supabase.co';
-const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp6b2Z3Zml4enNvdHJjbXJ4bHN4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgzMTczODcsImV4cCI6MjA3Mzg5MzM4N30.zgV7-3R0cuopTtw8caZaYnkM5Mxg1bphJzkuvZGuf-8';
+    // Supabase setup
+    const SUPABASE_URL = "https://jzofwfixzsotrcmrxlsx.supabase.co";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp6b2Z3Zml4enNvdHJjbXJ4bHN4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgzMTczODcsImV4cCI6MjA3Mzg5MzM4N30.zgV7-3R0cuopTtw8caZaYnkM5Mxg1bphJzkuvZGuf-8";
+    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-/* load supabase client (v2 library) */
-const script = document.createElement('script');
-script.src = 'https://unpkg.com/@supabase/supabase-js/dist/umd/supabase.js';
-document.head.appendChild(script);
+    const canvas = document.getElementById("tetris");
+    const ctx = canvas.getContext("2d");
+    const overlay = document.getElementById("overlay");
+    const usernameInput = document.getElementById("usernameInput");
 
-script.onload = () => {
-  window.supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
-};
+    const COLS = 12, ROWS = 24, BLOCK = 30;
+    canvas.width = COLS * BLOCK;
+    canvas.height = ROWS * BLOCK;
 
-/* =========================
-   Helpers: audio + utils
-   ========================= */
-const sound = (function(){
-  const ctx = new (window.AudioContext || window.webkitAudioContext)();
-  let muted = false;
-  function tone(freq, time=0.06, type='sine', vol=0.06){
-    if (muted) return;
-    const o = ctx.createOscillator();
-    const g = ctx.createGain();
-    o.type = type;
-    o.frequency.value = freq;
-    g.gain.value = vol;
-    o.connect(g); g.connect(ctx.destination);
-    o.start();
-    o.stop(ctx.currentTime + time);
-  }
-  function click(){ tone(880,0.04,'square',0.04); }
-  function clear(){ tone(1400,0.12,'sawtooth',0.06); }
-  function boom(){ tone(120,0.25,'sine',0.18); }
-  function setMuted(v){ muted = v; }
-  return { click, clear, boom, setMuted };
-})();
+    let board = Array.from({ length: ROWS }, () => Array(COLS).fill(0));
+    let pieces = "TJLOSZI";
+    let colors = {
+      T: "#ff00ff", J: "#0000ff", L: "#ff8800",
+      O: "#ffff00", S: "#00ff00", Z: "#ff0000", I: "#00ffff"
+    };
 
-document.getElementById('muteBtn').addEventListener('click', () => {
-  const el = document.getElementById('muteBtn');
-  const isOn = el.textContent === 'Mute';
-  sound.setMuted(isOn); // if currently MUTE label -> setMuted(true) when toggling? invert logic below:
-  if (isOn) {
-    el.textContent = 'Unmute';
-    sound.setMuted(true);
-  } else {
-    el.textContent = 'Mute';
-    sound.setMuted(false);
-  }
-});
+    let dropInterval = 800, lastDrop = 0;
+    let piece = null;
+    let score = 0, highScore = 0;
+    let username = localStorage.getItem("username") || null;
+    let gameRunning = false;
 
-/* =========================
-   Neon background subtle grid
-   ========================= */
-(function bgCanvas(){
-  const bg = document.getElementById('bgCanvas');
-  const ctx = bg.getContext('2d');
-  function resize(){ bg.width = innerWidth; bg.height = innerHeight; draw(); }
-  window.addEventListener('resize', resize);
-  function draw(){
-    ctx.clearRect(0,0,bg.width,bg.height);
-    // diagonal gradient glow
-    const g = ctx.createLinearGradient(0,0,bg.width,bg.height);
-    g.addColorStop(0, '#00220f');
-    g.addColorStop(1, '#001a12');
-    ctx.fillStyle = g;
-    ctx.fillRect(0,0,bg.width,bg.height);
-    // light grid points
-    ctx.fillStyle = '#00ff88';
-    for(let x=0;x<bg.width;x+=80){
-      for(let y=0;y<bg.height;y+=80){
-        ctx.globalAlpha = 0.08;
-        ctx.beginPath(); ctx.arc(x+20,y+30,6,0,Math.PI*2); ctx.fill();
+    if (username) {
+      usernameInput.value = username;
+      overlay.innerHTML = `<p>Welcome back, <b>${username}</b></p><p>Press SPACE to start</p>`;
+      loadHighScore();
+    }
+
+    function randomPiece() {
+      const type = pieces[Math.floor(Math.random() * pieces.length)];
+      if (type === "T") return { matrix:[[0,1,0],[1,1,1]], color:colors.T, x:4,y:0 };
+      if (type === "J") return { matrix:[[1,0,0],[1,1,1]], color:colors.J, x:4,y:0 };
+      if (type === "L") return { matrix:[[0,0,1],[1,1,1]], color:colors.L, x:4,y:0 };
+      if (type === "O") return { matrix:[[1,1],[1,1]], color:colors.O, x:5,y:0 };
+      if (type === "S") return { matrix:[[0,1,1],[1,1,0]], color:colors.S, x:4,y:0 };
+      if (type === "Z") return { matrix:[[1,1,0],[0,1,1]], color:colors.Z, x:4,y:0 };
+      if (type === "I") return { matrix:[[1,1,1,1]], color:colors.I, x:4,y:0 };
+    }
+
+    function drawMatrix(matrix, offset, color) {
+      ctx.fillStyle = color;
+      matrix.forEach((row, y) => row.forEach((val, x) => {
+        if (val) ctx.fillRect((x+offset.x)*BLOCK,(y+offset.y)*BLOCK,BLOCK-1,BLOCK-1);
+      }));
+    }
+
+    function collide(matrix, pos) {
+      return matrix.some((row,y) => row.some((val,x) => {
+        return val && (board[y+pos.y] && board[y+pos.y][x+pos.x]) !== 0;
+      }));
+    }
+
+    function merge(matrix, pos, color) {
+      matrix.forEach((row,y) => row.forEach((val,x) => {
+        if (val) board[y+pos.y][x+pos.x] = color;
+      }));
+    }
+
+    function rotate(matrix) {
+      return matrix[0].map((_, i) => matrix.map(row => row[i])).reverse();
+    }
+
+    function drawBoard() {
+      ctx.fillStyle = "#111";
+      ctx.fillRect(0,0,canvas.width,canvas.height);
+      board.forEach((row,y) => row.forEach((val,x) => {
+        if (val) {
+          ctx.fillStyle = val;
+          ctx.fillRect(x*BLOCK,y*BLOCK,BLOCK-1,BLOCK-1);
+        }
+      }));
+    }
+
+    function drop() {
+      piece.y++;
+      if (collide(piece.matrix,piece)) {
+        piece.y--;
+        merge(piece.matrix,piece,piece.color);
+        clearRows();
+        piece = randomPiece();
+        if (collide(piece.matrix,piece)) gameOver();
       }
     }
-    ctx.globalAlpha = 1;
-  }
-  resize();
-})();
 
-
-/* =========================
-   TETRIS CORE
-   ========================= */
-const canvas = document.getElementById('t');
-const ctx = canvas.getContext('2d');
-
-let COLS = 10, ROWS = 20;
-let cellSize = 36;             // base; will update for responsive
-let boardW, boardH;
-
-function fitCanvas(){
-  // pick a reasonable cellSize based on window innerHeight/width
-  const maxHeight = Math.min(innerHeight * 0.78, 900);
-  cellSize = Math.floor(Math.min(48, Math.max(26, Math.floor(maxHeight / ROWS))));
-  boardW = COLS * cellSize;
-  boardH = ROWS * cellSize;
-  canvas.style.width = boardW + 'px';
-  canvas.style.height = boardH + 'px';
-  canvas.width = COLS;
-  canvas.height = ROWS;
-  canvas.style.imageRendering = 'pixelated';
-}
-window.addEventListener('resize', fitCanvas);
-fitCanvas();
-
-/* color palette (neon) */
-const COLORS = [ null, '#00ff88', '#00d6ff','#ff77ff','#ffd700','#ff6b6b','#8bff00','#7ea0ff' ];
-
-function createMatrix(w,h){
-  const m = [];
-  for(let y=0;y<h;y++){ m.push(new Array(w).fill(0)); }
-  return m;
-}
-
-/* Player / pieces */
-function createPiece(type){
-  switch(type){
-    case 'T': return [[0,0,0],[1,1,1],[0,1,0]];
-    case 'O': return [[2,2],[2,2]];
-    case 'L': return [[0,3,0],[0,3,0],[0,3,3]];
-    case 'J': return [[0,4,0],[0,4,0],[4,4,0]];
-    case 'I': return [[0,5,0,0],[0,5,0,0],[0,5,0,0],[0,5,0,0]];
-    case 'S': return [[0,6,6],[6,6,0],[0,0,0]];
-    case 'Z': return [[7,7,0],[0,7,7],[0,0,0]];
-  }
-}
-
-/* game state */
-let arena, player, dropCounter, dropInterval, lastTime;
-let running=false, paused=false;
-let score=0, lines=0, level=0, highScore=0;
-let fastDrop=false; // hold-down behaviour
-let username = localStorage.getItem('symbio_user') || '';
-
-/* HUD references */
-const scoreLabel = document.getElementById('scoreLabel');
-const levelLabel = document.getElementById('levelLabel');
-const linesLabel = document.getElementById('linesLabel');
-const playerLabel = document.getElementById('playerLabel');
-
-/* particle fx for line clears */
-let particles = [];
-
-function emitParticles(x,y,color){
-  for(let i=0;i<18;i++){
-    particles.push({
-      x, y,
-      vx: (Math.random()-0.5)*4,
-      vy: (Math.random()-1.5)*4,
-      life: Math.random()*0.9 + 0.4,
-      color
-    });
-  }
-}
-
-/* utility collisions */
-function collide(arena, pl){
-  const m = pl.matrix, o=pl.pos;
-  for(let y=0;y<m.length;y++){
-    for(let x=0;x<m[y].length;x++){
-      if(m[y][x] !== 0 &&
-         (arena[y+o.y] && arena[y+o.y][x+o.x]) !== 0) return true;
+    function clearRows() {
+      outer: for (let y = ROWS-1; y >= 0; y--) {
+        if (board[y].every(v => v)) {
+          board.splice(y,1);
+          board.unshift(Array(COLS).fill(0));
+          score += 100;
+        }
+      }
     }
-  }
-  return false;
-}
 
-function merge(arena, pl){
-  pl.matrix.forEach((row,y)=>{
-    row.forEach((val,x)=>{
-      if(val !== 0){
-        arena[y+pl.pos.y][x+pl.pos.x] = val;
+    function update(time=0) {
+      if (!gameRunning) return;
+      const delta = time - lastDrop;
+      if (delta > dropInterval) {
+        drop();
+        lastDrop = time;
+      }
+      drawBoard();
+      drawMatrix(piece.matrix,piece,piece.color);
+      ctx.fillStyle="white";
+      ctx.font="20px Arial";
+      ctx.fillText("Score: "+score,20,30);
+      ctx.fillText("High Score: "+highScore,20,60);
+      requestAnimationFrame(update);
+    }
+
+    function gameOver() {
+      gameRunning = false;
+      saveHighScore();
+      overlay.style.display="flex";
+      overlay.innerHTML = `<h1>Game Over</h1><p>Score: ${score}</p><p>High Score: ${highScore}</p><button onclick="startGame()">Restart</button>`;
+    }
+
+    function startGame() {
+      overlay.style.display="none";
+      board = Array.from({ length: ROWS }, () => Array(COLS).fill(0));
+      piece = randomPiece();
+      score=0;
+      gameRunning=true;
+      requestAnimationFrame(update);
+    }
+
+    function saveUsername() {
+      username = usernameInput.value.trim();
+      if (!username) return alert("Enter username!");
+      localStorage.setItem("username", username);
+      overlay.innerHTML = `<p>Welcome, <b>${username}</b></p><p>Press SPACE to start</p>`;
+      loadHighScore();
+    }
+
+    async function loadHighScore() {
+      let { data } = await supabase.from("wall").select("highscore").eq("user", username).single();
+      highScore = data ? data.highscore : 0;
+    }
+
+    async function saveHighScore() {
+      if (score > highScore) {
+        highScore=score;
+        await supabase.from("wall").upsert({ user: username, highscore: highScore });
+      }
+    }
+
+    document.addEventListener("keydown", e => {
+      if (!gameRunning && e.code==="Space" && username) startGame();
+      else if (gameRunning) {
+        if (e.code==="ArrowLeft"){ piece.x--; if (collide(piece.matrix,piece)) piece.x++; }
+        else if (e.code==="ArrowRight"){ piece.x++; if (collide(piece.matrix,piece)) piece.x--; }
+        else if (e.code==="ArrowUp"){ let m=rotate(piece.matrix); if (!collide(m,piece)) piece.matrix=m; }
+        else if (e.code==="ArrowDown"){ drop(); }
       }
     });
-  });
-}
 
-/* clear full lines, spawn particles */
-function arenaSweep(){
-  let rowCount = 0;
-  outer: for(let y=arena.length-1;y>=0;y--){
-    for(let x=0;x<arena[y].length;x++){
-      if(arena[y][x] === 0) continue outer;
-    }
-    // full row
-    const removed = arena.splice(y,1)[0].slice();
-    arena.unshift(new Array(COLS).fill(0));
-    y++;
-    rowCount++;
-    // particles centered across width
-    emitParticles(Math.random()*COLS, y, '#00ff88');
-    sound.clear();
-  }
-  if(rowCount>0){
-    lines += rowCount;
-    score += (rowCount === 1 ? 100 : rowCount === 2 ? 300 : rowCount === 3 ? 700 : 1500) * (level+1);
-    // increase level every 5 lines
-    const newLevel = Math.floor(lines/5);
-    if(newLevel > level){
-      level = newLevel;
-      dropInterval = Math.max(120, 1000 - level*80);
-    }
-  }
-}
-
-/* spawn new piece */
-function playerReset(){
-  const pieces = 'TJLOSZI';
-  player.matrix = createPiece(pieces[Math.floor(Math.random()*pieces.length)]);
-  player.pos.y = 0;
-  player.pos.x = Math.floor((COLS - player.matrix[0].length)/2);
-  if(collide(arena, player)){
-    // game over
-    triggerGameOver();
-  }
-}
-
-/* movement + rotation */
-function playerMove(dir){
-  player.pos.x += dir;
-  if(collide(arena, player)) player.pos.x -= dir;
-  sound.click();
-}
-
-function rotate(matrix, dir){
-  for(let y=0;y<matrix.length;y++){
-    for(let x=0;x<y;x++){
-      [matrix[x][y], matrix[y][x]] = [matrix[y][x], matrix[x][y]];
-    }
-  }
-  if(dir>0) matrix.forEach(row=>row.reverse());
-  else matrix.reverse();
-}
-
-function playerRotate(dir){
-  const pos = player.pos.x;
-  let offset = 1;
-  rotate(player.matrix, dir);
-  while(collide(arena, player)){
-    player.pos.x += offset;
-    offset = -(offset + (offset>0?1:-1));
-    if(Math.abs(offset) > player.matrix[0].length){
-      rotate(player.matrix, -dir);
-      player.pos.x = pos;
-      return;
-    }
-  }
-  sound.click();
-}
-
-/* soft drop step */
-function playerDrop(){
-  player.pos.y++;
-  if(collide(arena, player)){
-    player.pos.y--;
-    merge(arena, player);
-    arenaSweep();
-    updateHUD();
-    playerReset();
-  }
-  dropCounter = 0;
-}
-
-/* hard drop */
-function hardDrop(){
-  while(!collide(arena, player)){
-    player.pos.y++;
-  }
-  player.pos.y--;
-  merge(arena, player);
-  arenaSweep();
-  updateHUD();
-  playerReset();
-  sound.click();
-}
-
-/* draw scaled */
-function draw(){
-  // clear
-  ctx.fillStyle = '#000';
-  ctx.fillRect(0,0,COLS,ROWS);
-  // draw arena
-  for(let y=0;y<ROWS;y++){
-    for(let x=0;x<COLS;x++){
-      const v = arena[y][x];
-      if(v!==0){
-        drawCell(x,y,v);
-      }
-    }
-  }
-  // draw player
-  const m = player.matrix;
-  for(let y=0;y<m.length;y++) for(let x=0;x<m[y].length;x++){
-    if(m[y][x]!==0) drawCell(x+player.pos.x, y+player.pos.y, m[y][x]);
-  }
-
-  // particles (draw scaled)
-  if(particles.length){
-    // draw as many small points
-    // we'll draw them using canvas transformed to pixel scale
-    // do nothing here because we are drawing in unit coordinates; we'll render particles onto DOM-sized canvas
-  }
-}
-
-/* draw a single cell with glow */
-function drawCell(cx, cy, v){
-  // use scaled rectangle with glow effect by drawing larger translucent rect on a temporary canvas
-  // Because context is small scale, use fillRect at cell coords
-  ctx.fillStyle = COLORS[v] || '#0f0';
-  ctx.fillRect(cx, cy, 1, 1);
-
-  // inner border to give neon effect
-  ctx.strokeStyle = 'rgba(0,0,0,0.3)';
-  ctx.strokeRect(cx+0.03, cy+0.03, 0.94, 0.94);
-}
-
-/* animation loop with timing */
-let dropCounterLocal = 0;
-function update(time=0){
-  if(!running) return;
-  const dt = time - lastTime;
-  lastTime = time;
-  dropCounterLocal += dt;
-  // fastDrop behaviour
-  const interval = fastDrop ? 60 : dropInterval;
-  if(dropCounterLocal > interval){
-    playerDrop();
-    dropCounterLocal = 0;
-  }
-  // render to physical canvas: we draw in logical cell space then scale when displaying
-  // We'll copy logical canvas to displayed scaled resolution using CSS scaling (canvas width=COLS height=ROWS)
-  draw();
-  renderParticles(dt/1000);
-  requestAnimationFrame(update);
-}
-
-/* particle physics + render to screen overlay */
-const particleCanvas = document.createElement('canvas');
-particleCanvas.style.position='absolute';
-particleCanvas.style.left = canvas.style.left || '0';
-particleCanvas.style.top = canvas.style.top || '0';
-particleCanvas.style.pointerEvents = 'none';
-particleCanvas.style.zIndex = 5;
-document.getElementById('canvasWrap').appendChild(particleCanvas);
-const pctx = particleCanvas.getContext('2d');
-
-function resizeParticleCanvas(){
-  // actual pixel size scales with css dimension
-  particleCanvas.width = canvas.clientWidth;
-  particleCanvas.height = canvas.clientHeight;
-  particleCanvas.style.width = canvas.clientWidth + 'px';
-  particleCanvas.style.height = canvas.clientHeight + 'px';
-}
-window.addEventListener('resize', resizeParticleCanvas);
-resizeParticleCanvas();
-
-function renderParticles(dt){
-  // step particles in logical units -> convert to pixel space when drawing
-  for(let i=particles.length-1;i>=0;i--){
-    const p = particles[i];
-    p.x += p.vx * dt * 6;
-    p.y += p.vy * dt * 6;
-    p.vy += 9.8 * dt * 0.6; // gravity
-    p.life -= dt;
-    if(p.life <= 0) particles.splice(i,1);
-  }
-  // draw
-  pctx.clearRect(0,0,particleCanvas.width,particleCanvas.height);
-  for(const p of particles){
-    pctx.fillStyle = p.color;
-    const sx = (p.x / COLS) * particleCanvas.width;
-    const sy = (p.y / ROWS) * particleCanvas.height;
-    const size = 6 * (p.life+0.1);
-    pctx.globalAlpha = Math.max(0, p.life/1.2);
-    pctx.beginPath(); pctx.arc(sx, sy, size, 0, Math.PI*2); pctx.fill();
-  }
-  pctx.globalAlpha = 1;
-}
-
-/* overlay control */
-const goOverlay = document.getElementById('gameOver');
-const goText = document.getElementById('goText');
-const retryBtn = document.getElementById('retryBtn');
-const winOverlay = document.getElementById('winOverlay');
-const winText = document.getElementById('winText');
-const winRestart = document.getElementById('winRestart');
-
-retryBtn.addEventListener('click', ()=>{
-  goOverlay.style.display='none';
-  resetGame();
-});
-winRestart.addEventListener('click', ()=>{
-  winOverlay.style.display='none';
-  resetGame();
-});
-
-/* Game Over / Win */
-async function triggerGameOver(){
-  running = false;
-  sound.boom();
-  // save high score
-  await maybeSaveHighScore();
-  goText.textContent = `You scored ${score} — Lines: ${lines} — Level: ${level}`;
-  goOverlay.style.display = 'flex';
-}
-
-async function triggerWin(){
-  running = false;
-  sound.clear();
-  await maybeSaveHighScore();
-  winText.textContent = `You reached Level ${level} and scored ${score}!`;
-  winOverlay.style.display = 'flex';
-}
-
-/* save high score via Supabase */
-async function maybeSaveHighScore(){
-  // require supabase client
-  if(!window.supabaseClient || !username) return;
-  try{
-    // check current best
-    const { data } = await window.supabaseClient
-      .from('symbiotic_tetris_scores')
-      .select('score')
-      .eq('username', username)
-      .order('score', { ascending:false })
-      .limit(1);
-
-    const best = (data && data.length)? data[0].score : 0;
-    if(score > best){
-      await window.supabaseClient
-        .from('symbiotic_tetris_scores')
-        .insert([{ username, score }]);
-    }
-  }catch(e){
-    console.warn('save failed', e);
-  }
-}
-
-/* HUD update */
-function updateHUD(){
-  scoreLabel.textContent = `Score: ${score}`;
-  levelLabel.textContent = `Level: ${level}`;
-  linesLabel.textContent = `Lines: ${lines}`;
-  playerLabel.textContent = `Player: ${username || '—'}`;
-}
-
-/* init/reset game */
-function resetGame(){
-  arena = createMatrix(COLS, ROWS);
-  player = { pos:{x:0,y:0}, matrix: null };
-  score = 0; lines = 0; level = 0; highScore = 0;
-  dropInterval = 1000; lastTime = 0; dropCounter = 0; fastDrop=false;
-  running = true;
-  document.getElementById('restartBtn').style.display='none';
-  playerReset();
-  updateHUD();
-  requestAnimationFrame(update);
-}
-
-/* start/controls */
-document.addEventListener('keydown', (e)=>{
-  if(!running) return;
-  if(e.key === 'ArrowLeft') playerMove(-1);
-  if(e.key === 'ArrowRight') playerMove(1);
-  if(e.key === 'ArrowUp') playerRotate(1);
-  if(e.key === ' ') { // hard drop
-    e.preventDefault();
-    hardDrop();
-  }
-  if(e.key === 'ArrowDown'){ fastDrop = true; } // hold down
-});
-document.addEventListener('keyup', (e)=>{
-  if(e.key === 'ArrowDown'){ fastDrop = false; }
-});
-
-/* hook UI save username + load highscore */
-document.getElementById('saveBtn').addEventListener('click', async ()=>{
-  const val = document.getElementById('username').value.trim();
-  if(!val){ alert('enter a username'); return;}
-  username = val;
-  localStorage.setItem('symbio_user', username);
-  playerLabel.textContent = `Player: ${username}`;
-  // try load best
-  if(window.supabaseClient){
-    try{
-      const { data } = await window.supabaseClient
-        .from('symbiotic_tetris_scores')
-        .select('score')
-        .eq('username', username)
-        .order('score', { ascending: false })
-        .limit(1);
-      highScore = (data && data.length)? data[0].score : 0;
-    }catch(e){ console.warn(e); }
-  }
-});
-
-/* start button (header Start) */
-document.querySelector('.controls button')?.addEventListener('click', ()=>{
-  // the header Save button shares listener above (id=saveBtn)
-});
-
-/* small game loop integration to update actual pixel drawing (scale) */
-function renderToScreen(){
-  // copy logical canvas (width=COLS, height=ROWS) scaled by CSS to DOM size
-  // but we are drawing directly in logical space using ctx.fillRect on unit units
-  // We need to style canvas CSS size already done. No extra blit required.
-  requestAnimationFrame(renderToScreen);
-}
-renderToScreen();
-
-/* Start/responsive init */
-fitCanvas(); // set correct display dims
-resizeParticleCanvas(); // match particle overlay
-resetGame();
-
-/* Expose some global controls */
-window.resetGame = resetGame;
-window.hardDrop = hardDrop;
-window.getState = ()=>({score,lines,level,username});
-</script>
+    window.saveUsername = saveUsername;
+    window.startGame = startGame;
+  </script>
 </body>
 </html>
