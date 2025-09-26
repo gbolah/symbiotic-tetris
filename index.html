@@ -1,589 +1,333 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Symbiotic Tetris — Neon</title>
-<style>
-  :root{
-    --neon:#00ff88;
-    --neon-2:#6ef0ff;
-    --bg:#03060a;
-    --panel: rgba(255,255,255,0.03);
-    --muted: #bfeee0;
-  }
-  html,body{height:100%;margin:0;background:radial-gradient(circle at 20% 10%, rgba(0,255,136,0.06), rgba(0,0,0,0.9)), linear-gradient(180deg,#00110a,#001a12); font-family:Inter,system-ui,Arial;color:var(--muted);overflow:hidden}
-  .app {
-    min-height:100vh; display:flex; flex-direction:column; align-items:center; gap:18px; padding:18px;
-  }
-  header { width:100%; max-width:1180px; display:flex; justify-content:space-between; align-items:center; gap:12px; }
-  .title { color:var(--neon); font-weight:900; font-size:28px; letter-spacing:0.6px; text-shadow:0 8px 30px rgba(0,255,136,0.09); }
-  .controls { display:flex; gap:8px; align-items:center; }
-  .controls input{ padding:8px 10px; border-radius:10px; border:1px solid rgba(255,255,255,0.06); background:transparent; color:var(--muted); min-width:160px}
-  .controls button{padding:8px 12px; border-radius:10px; border:none; background:var(--neon); color:#002; font-weight:800; cursor:pointer; box-shadow:0 10px 40px rgba(0,255,136,0.08)}
-  .layout { width:100%; max-width:1180px; display:flex; gap:20px; align-items:flex-start; justify-content:center; }
-  .card { background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); border-radius:14px; padding:14px; border:1px solid rgba(0,255,136,0.06); box-shadow:0 30px 80px rgba(0,0,0,0.6); }
-  /* canvas wrap controls sizing via CSS variable */
-  #canvasWrap{ --cell:40px; width: calc(var(--cell) * 10); height: calc(var(--cell) * 20); position:relative; }
-  canvas#game{ width:100%; height:100%; display:block; border-radius:8px; background: linear-gradient(180deg, rgba(0,0,0,0.65), rgba(0,0,0,0.85)); box-shadow: 0 8px 40px rgba(0,255,136,0.04) inset; image-rendering: pixelated; }
-  .hud{ width:320px; display:flex; flex-direction:column; gap:10px; color:var(--muted); }
-  .hud .big{ color:var(--neon); font-size:20px; font-weight:900; letter-spacing:0.4px; text-shadow:0 6px 20px rgba(0,255,136,0.06); }
-  .stat{ font-size:14px; color:#cfeee0; }
-  .muted{ font-size:12px; color:#9fd9c0; }
-  .overlay{ position:fixed; inset:0; display:none; align-items:center; justify-content:center; background:linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.8)); z-index:60; }
-  .sheet{ background:linear-gradient(180deg,#02120a,#011d12); padding:26px; border-radius:12px; text-align:center; color:var(--neon); box-shadow:0 30px 80px rgba(0,0,0,0.6); border:1px solid rgba(0,255,136,0.08); min-width:280px; }
-  .sheet h2{ margin:0 0 8px; font-size:34px; }
-  .sheet p{ color:var(--muted); margin:8px 0 16px; }
-  .sheet button{ padding:10px 16px; background:var(--neon); color:#002; font-weight:800; border-radius:10px; border:none; cursor:pointer; box-shadow:0 8px 30px rgba(0,255,136,0.06); }
-  .particle-canvas{ position:absolute; left:0; top:0; width:100%; height:100%; pointer-events:none; z-index:40; }
-  @media(max-width:980px){
-    #canvasWrap{ --cell:28px; width: calc(var(--cell) * 10); height: calc(var(--cell) * 20); }
-    .hud{ width:220px; }
-    header{ flex-direction:column; align-items:flex-start; gap:8px; }
-    .layout{ flex-direction:column; align-items:center; }
-  }
-</style>
+  <meta charset="UTF-8">
+  <title>Symbiotic Tetris</title>
+  <style>
+    body {
+      margin: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      background: radial-gradient(circle at center, #39ff14 20%, #0f0f0f 100%);
+      overflow: hidden;
+      font-family: Arial, sans-serif;
+      color: white;
+    }
+
+    .container {
+      text-align: center;
+    }
+
+    h1 {
+      font-size: 3rem;
+      color: #39ff14;
+      text-shadow: 0 0 15px #39ff14, 0 0 25px #39ff14;
+      margin-bottom: 10px;
+    }
+
+    #score {
+      font-size: 1.5rem;
+      margin-bottom: 15px;
+      color: #fff;
+      text-shadow: 0 0 10px #39ff14;
+    }
+
+    canvas {
+      border: 3px solid #39ff14;
+      box-shadow: 0 0 20px #39ff14;
+      background: #111;
+      display: block;
+      margin: auto;
+    }
+
+    #gameOver {
+      font-size: 2rem;
+      color: red;
+      text-shadow: 0 0 20px red;
+      display: none;
+      margin-top: 15px;
+    }
+
+    button {
+      background: #39ff14;
+      border: none;
+      padding: 10px 20px;
+      font-size: 1rem;
+      font-weight: bold;
+      border-radius: 8px;
+      margin-top: 10px;
+      cursor: pointer;
+      box-shadow: 0 0 15px #39ff14;
+    }
+
+    button:hover {
+      background: #2ecc71;
+      box-shadow: 0 0 20px #2ecc71;
+    }
+  </style>
 </head>
 <body>
-<div class="app">
-  <header>
-    <div class="title">Symbiotic Tetris — Neon Arcade</div>
-    <div class="controls">
-      <input id="username" placeholder="Enter username (saved locally)" />
-      <button id="saveBtn">Save</button>
-      <button id="muteBtn">Mute</button>
-    </div>
-  </header>
-
-  <div class="layout">
-    <div class="card" id="canvasWrap">
-      <canvas id="game"></canvas>
-      <canvas class="particle-canvas" id="particles"></canvas>
-    </div>
-
-    <div class="hud card">
-      <div class="big" id="playerLabel">Player: —</div>
-      <div class="stat" id="scoreLabel">Score: 0</div>
-      <div class="stat" id="highLabel">High Score: 0</div>
-      <div class="stat" id="levelLabel">Level: 0</div>
-      <div class="stat" id="linesLabel">Lines: 0</div>
-      <div class="muted">Controls: ← → Move • ↑ Rotate • ↓ Hold to fast-drop • Space hard-drop</div>
-    </div>
+  <div class="container">
+    <h1>Symbiotic Tetris</h1>
+    <div id="score">Score: 0</div>
+    <canvas id="tetris" width="320" height="640"></canvas>
+    <div id="gameOver">Game Over</div>
+    <button id="restartBtn">Restart</button>
   </div>
-</div>
 
-<!-- overlays -->
-<div id="gameOver" class="overlay"><div class="sheet"><h2>⚡ GAME OVER</h2><p id="goText">You scored 0</p><button id="retryBtn">Restart</button></div></div>
-<div id="winOverlay" class="overlay"><div class="sheet"><h2>🏆 VICTORY</h2><p id="winText">Legendary!</p><button id="winRestart">Play Again</button></div></div>
+  <script>
+    const canvas = document.getElementById("tetris");
+    const context = canvas.getContext("2d");
+    context.scale(32, 32); // each block = 32px
 
-<script type="module">
-/* -----------------------
-   Supabase init (v2 esm)
-   ----------------------- */
-import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
-const SUPABASE_URL = 'https://jzofwfixzsotrcmrxlsx.supabase.co';
-const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp6b2Z3Zml4enNvdHJjbXJ4bHN4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgzMTczODcsImV4cCI6MjA3Mzg5MzM4N30.zgV7-3R0cuopTtw8caZaYnkM5Mxg1bphJzkuvZGuf-8';
-const supabase = createClient(SUPABASE_URL, SUPABASE_ANON);
+    const scoreElement = document.getElementById("score");
+    const gameOverElement = document.getElementById("gameOver");
+    const restartBtn = document.getElementById("restartBtn");
 
-/* -----------------------
-   Audio helper (small SFX)
-   ----------------------- */
-const audio = (function(){
-  const ctx = new (window.AudioContext || window.webkitAudioContext)();
-  let muted = false;
-  function play(freq, time=0.06, type='sine', vol=0.06){
-    if (muted) return;
-    const o = ctx.createOscillator();
-    const g = ctx.createGain();
-    o.type = type; o.frequency.value = freq;
-    g.gain.value = vol;
-    o.connect(g); g.connect(ctx.destination);
-    o.start();
-    o.stop(ctx.currentTime + time);
-  }
-  return {
-    click(){ play(900,0.03,'square',0.04); },
-    clear(){ play(1200,0.12,'sawtooth',0.07); },
-    boom(){ play(160,0.35,'sine',0.18); },
-    setMuted(v){ muted = v; }
-  };
-})();
+    const colors = [
+      null,
+      "#39ff14", // glowing green
+      "#ff073a", // red
+      "#00f7ff", // cyan
+      "#ffae00", // orange
+      "#8e44ad", // purple
+      "#2ecc71", // light green
+      "#3498db", // blue
+    ];
 
-/* -----------------------
-   DOM refs & canvas sizing
-   ----------------------- */
-const canvas = document.getElementById('game');
-const ctx = canvas.getContext('2d');
-const pCanvas = document.getElementById('particles');
-const pctx = pCanvas.getContext('2d');
+    function createMatrix(w, h) {
+      const matrix = [];
+      while (h--) {
+        matrix.push(new Array(w).fill(0));
+      }
+      return matrix;
+    }
 
-const scoreLabel = document.getElementById('scoreLabel');
-const highLabel = document.getElementById('highLabel');
-const levelLabel = document.getElementById('levelLabel');
-const linesLabel = document.getElementById('linesLabel');
-const playerLabel = document.getElementById('playerLabel');
+    function drawMatrix(matrix, offset) {
+      matrix.forEach((row, y) => {
+        row.forEach((value, x) => {
+          if (value !== 0) {
+            context.fillStyle = colors[value];
+            context.shadowColor = colors[value];
+            context.shadowBlur = 20;
+            context.fillRect(x + offset.x, y + offset.y, 1, 1);
+          }
+        });
+      });
+    }
 
-const gameOverOverlay = document.getElementById('gameOver');
-const winOverlay = document.getElementById('winOverlay');
-const goText = document.getElementById('goText');
-const winText = document.getElementById('winText');
-const retryBtn = document.getElementById('retryBtn');
-const winRestart = document.getElementById('winRestart');
+    function merge(arena, player) {
+      player.matrix.forEach((row, y) => {
+        row.forEach((value, x) => {
+          if (value !== 0) {
+            arena[y + player.pos.y][x + player.pos.x] = value;
+          }
+        });
+      });
+    }
 
-const saveBtn = document.getElementById('saveBtn');
-const muteBtn = document.getElementById('muteBtn');
-const usernameInput = document.getElementById('username');
+    function collide(arena, player) {
+      const m = player.matrix;
+      const o = player.pos;
+      for (let y = 0; y < m.length; ++y) {
+        for (let x = 0; x < m[y].length; ++x) {
+          if (m[y][x] !== 0 &&
+            (arena[y + o.y] &&
+             arena[y + o.y][x + o.x]) !== 0) {
+            return true;
+          }
+        }
+      }
+      return false;
+    }
 
-/* -----------------------
-   Game params & state
-   ----------------------- */
-let COLS = 10, ROWS = 20;
-let scaleCell = 36; // will be responsive
-let canvasWidth, canvasHeight;
-let arena = [];
-let player = { pos:{x:0,y:0}, matrix:null };
-let dropCounter = 0;
-let lastTime = 0;
-let dropInterval = 1000;         // ms
-let running = false;
-let fastDrop = false;
-let score = 0, lines = 0, level = 0, highScore = 0;
-let username = localStorage.getItem('symbio_user') || '';
-let particles = [];
+    function playerDrop() {
+      player.pos.y++;
+      if (collide(arena, player)) {
+        player.pos.y--;
+        merge(arena, player);
+        playerReset();
+        arenaSweep();
+        updateScore();
+      }
+      dropCounter = 0;
+    }
 
-/* colors (neon) */
-const COLORS = [null,'#00ff88','#6ef0ff','#d76eff','#ffd36e','#ff6b6b','#91ff4c','#7ea0ff'];
-
-/* responsive: compute cell size from container */
-function fit(){
-  const wrap = document.getElementById('canvasWrap');
-  const rect = wrap.getBoundingClientRect();
-  // pick cell so 10x20 fits
-  scaleCell = Math.floor(Math.min(rect.width / COLS, (rect.height) / ROWS));
-  canvasWidth = COLS; canvasHeight = ROWS;
-  canvas.width = canvasWidth;
-  canvas.height = canvasHeight;
-  canvas.style.width = (scaleCell*COLS) + 'px';
-  canvas.style.height = (scaleCell*ROWS) + 'px';
-  pCanvas.width = scaleCell*COLS;
-  pCanvas.height = scaleCell*ROWS;
-  pCanvas.style.width = (scaleCell*COLS) + 'px';
-  pCanvas.style.height = (scaleCell*ROWS) + 'px';
-}
-window.addEventListener('resize', ()=>{ fit(); draw(); });
-
-/* -----------------------
-   Matrix & pieces
-   ----------------------- */
-function createMatrix(w,h){
-  const m = [];
-  for(let y=0;y<h;y++) m.push(new Array(w).fill(0));
-  return m;
-}
-
-function createPiece(type){
-  switch(type){
-    case 'T': return [[0,0,0],[1,1,1],[0,1,0]];
-    case 'O': return [[2,2],[2,2]];
-    case 'L': return [[0,3,0],[0,3,0],[0,3,3]];
-    case 'J': return [[0,4,0],[0,4,0],[4,4,0]];
-    case 'I': return [[0,5,0,0],[0,5,0,0],[0,5,0,0],[0,5,0,0]];
-    case 'S': return [[0,6,6],[6,6,0],[0,0,0]];
-    case 'Z': return [[7,7,0],[0,7,7],[0,0,0]];
-  }
-}
-
-/* -----------------------
-   Collision & merge
-   ----------------------- */
-function collide(arena, pl){
-  const m = pl.matrix, o = pl.pos;
-  for(let y=0;y<m.length;y++){
-    for(let x=0;x<m[y].length;x++){
-      if (m[y][x] !== 0 &&
-         (arena[y+o.y] && arena[y+o.y][x+o.x]) !== 0) {
-        return true;
+    function playerMove(dir) {
+      player.pos.x += dir;
+      if (collide(arena, player)) {
+        player.pos.x -= dir;
       }
     }
-  }
-  return false;
-}
 
-function merge(arena, pl){
-  pl.matrix.forEach((row,y)=>{
-    row.forEach((val,x)=>{ if(val !== 0) arena[y+pl.pos.y][x+pl.pos.x] = val; });
-  });
-}
+    function playerReset() {
+      const pieces = "TJLOSZI";
+      player.matrix = createPiece(pieces[pieces.length * Math.random() | 0]);
+      player.pos.y = 0;
+      player.pos.x = (arena[0].length / 2 | 0) -
+                     (player.matrix[0].length / 2 | 0);
 
-/* -----------------------
-   rotations
-   ----------------------- */
-function rotate(matrix, dir){
-  for (let y=0;y<matrix.length;y++){
-    for (let x=0;x<y;x++){
-      [matrix[x][y], matrix[y][x]] = [matrix[y][x], matrix[x][y]];
-    }
-  }
-  if (dir > 0) matrix.forEach(row=>row.reverse());
-  else matrix.reverse();
-}
-
-/* -----------------------
-   spawn & reset
-   ----------------------- */
-function playerReset(){
-  const pieces = 'TJLOSZI';
-  player.matrix = createPiece(pieces[Math.floor(Math.random()*pieces.length)]);
-  player.pos.y = 0;
-  player.pos.x = Math.floor((COLS - player.matrix[0].length)/2);
-  // if spawn collides => game over
-  if (collide(arena, player)) {
-    endGame();
-  }
-}
-
-/* -----------------------
-   row clear + particles
-   ----------------------- */
-function arenaSweep(){
-  let removed = 0;
-  outer: for(let y=arena.length-1;y>=0;y--){
-    for(let x=0;x<arena[y].length;x++){
-      if (arena[y][x] === 0) continue outer;
-    }
-    const row = arena.splice(y,1)[0].slice();
-    arena.unshift(new Array(COLS).fill(0));
-    y++;
-    removed++;
-    // spawn particles centered around width
-    spawnParticles(Math.random()*(COLS-3)+2, y, '#00ff88');
-    audio.clear();
-  }
-  if (removed > 0){
-    lines += removed;
-    // scoring: typical Tetris-ish
-    const points = removed === 1 ? 100 : removed === 2 ? 300 : removed === 3 ? 700 : 1500;
-    score += points * (level + 1);
-    // increase level every 6 lines
-    const newLevel = Math.floor(lines / 6);
-    if (newLevel > level){
-      level = newLevel;
-      dropInterval = Math.max(100, 1000 - level * 85); // faster with levels
-    }
-  }
-}
-
-/* -----------------------
-   particles
-   ----------------------- */
-function spawnParticles(cx, cy, color){
-  for(let i=0;i<18;i++){
-    particles.push({
-      x: cx + (Math.random()-0.5)*2,
-      y: cy + (Math.random()-0.5)*1,
-      vx: (Math.random()-0.5)*4,
-      vy: (Math.random()-1.5)*4,
-      life: Math.random()*0.9 + 0.6,
-      color
-    });
-  }
-}
-
-/* update + render particles (pixel-mapped) */
-function updateParticles(dt){
-  // step physics
-  for(let i=particles.length-1;i>=0;i--){
-    const p = particles[i];
-    p.x += p.vx * dt * 4;
-    p.y += p.vy * dt * 4;
-    p.vy += 9.8 * dt * 0.5;
-    p.life -= dt;
-    if (p.life <= 0) particles.splice(i,1);
-  }
-  // render on pCanvas (pixel space)
-  pctx.clearRect(0,0,pCanvas.width,pCanvas.height);
-  for(const p of particles){
-    pctx.globalAlpha = Math.max(0, p.life/1.2);
-    pctx.fillStyle = p.color;
-    const sx = (p.x / COLS) * pCanvas.width;
-    const sy = (p.y / ROWS) * pCanvas.height;
-    const size = 4 * (p.life + 0.2);
-    pctx.beginPath();
-    pctx.arc(sx, sy, size, 0, Math.PI*2);
-    pctx.fill();
-  }
-  pctx.globalAlpha = 1;
-}
-
-/* -----------------------
-   draw cell with glow (logical units)
-   ----------------------- */
-function draw(){
-  // logical canvas (units = cells)
-  ctx.clearRect(0,0,canvas.width,canvas.height);
-  // draw arena
-  for (let y=0;y<ROWS;y++){
-    for (let x=0;x<COLS;x++){
-      const v = arena[y][x];
-      if (v !== 0){
-        drawCell(x,y,v);
-      } else {
-        // subtle grid line
-        ctx.fillStyle = "rgba(255,255,255,0.01)";
-        //ctx.fillRect(x+0.02,y+0.02,0.96,0.96);
+      if (collide(arena, player)) {
+        arena.forEach(row => row.fill(0));
+        gameOverElement.style.display = "block";
+        cancelAnimationFrame(animationFrame);
       }
     }
-  }
-  // draw player
-  const m = player.matrix;
-  if (m) {
-    for (let y=0;y<m.length;y++){
-      for (let x=0;x<m[y].length;x++){
-        if (m[y][x] !== 0){
-          drawCell(x + player.pos.x, y + player.pos.y, m[y][x]);
+
+    function playerRotate(dir) {
+      const pos = player.pos.x;
+      let offset = 1;
+      rotate(player.matrix, dir);
+      while (collide(arena, player)) {
+        player.pos.x += offset;
+        offset = -(offset + (offset > 0 ? 1 : -1));
+        if (offset > player.matrix[0].length) {
+          rotate(player.matrix, -dir);
+          player.pos.x = pos;
+          return;
         }
       }
     }
-  }
-}
 
-function drawCell(cx, cy, v){
-  // fill cell base color
-  ctx.fillStyle = COLORS[v] || '#00ff88';
-  ctx.fillRect(cx + 0.02, cy + 0.02, 0.96, 0.96);
-  // add inner dark stroke to simulate panel
-  ctx.strokeStyle = 'rgba(0,0,0,0.3)';
-  ctx.strokeRect(cx + 0.04, cy + 0.04, 0.92, 0.92);
-}
+    function rotate(matrix, dir) {
+      for (let y = 0; y < matrix.length; ++y) {
+        for (let x = 0; x < y; ++x) {
+          [
+            matrix[x][y],
+            matrix[y][x],
+          ] = [
+            matrix[y][x],
+            matrix[x][y],
+          ];
+        }
+      }
+      if (dir > 0) {
+        matrix.forEach(row => row.reverse());
+      } else {
+        matrix.reverse();
+      }
+    }
 
-/* -----------------------
-   game loop
-   ----------------------- */
-let last = 0;
-function loop(time = 0){
-  if (!running) return;
-  const dt = (time - last) / 1000;
-  last = time;
-  // fastDrop uses smaller interval while hold
-  const interval = fastDrop ? Math.max(30, dropInterval/8) : dropInterval;
-  dropCounter += (time - (lastTime||time));
-  lastTime = time;
-  if (dropCounter > interval){
-    step();
-    dropCounter = 0;
-  }
-  // draw in logical units; scale to CSS via style
-  draw();
-  updateParticles(dt);
-  requestAnimationFrame(loop);
-}
+    function createPiece(type) {
+      if (type === "T") {
+        return [
+          [0, 0, 0],
+          [1, 1, 1],
+          [0, 1, 0],
+        ];
+      } else if (type === "O") {
+        return [
+          [2, 2],
+          [2, 2],
+        ];
+      } else if (type === "L") {
+        return [
+          [0, 3, 0],
+          [0, 3, 0],
+          [0, 3, 3],
+        ];
+      } else if (type === "J") {
+        return [
+          [0, 4, 0],
+          [0, 4, 0],
+          [4, 4, 0],
+        ];
+      } else if (type === "I") {
+        return [
+          [0, 5, 0, 0],
+          [0, 5, 0, 0],
+          [0, 5, 0, 0],
+          [0, 5, 0, 0],
+        ];
+      } else if (type === "S") {
+        return [
+          [0, 6, 6],
+          [6, 6, 0],
+          [0, 0, 0],
+        ];
+      } else if (type === "Z") {
+        return [
+          [7, 7, 0],
+          [0, 7, 7],
+          [0, 0, 0],
+        ];
+      }
+    }
 
-/* step logically */
-function step(){
-  if (!player.matrix) return;
-  player.pos.y++;
-  if (collide(arena, player)){
-    player.pos.y--;
-    merge(arena, player);
-    audio.click();
-    arenaSweep();
-    updateHUD();
+    function arenaSweep() {
+      let rowCount = 1;
+      outer: for (let y = arena.length - 1; y >= 0; --y) {
+        for (let x = 0; x < arena[y].length; ++x) {
+          if (arena[y][x] === 0) {
+            continue outer;
+          }
+        }
+        const row = arena.splice(y, 1)[0].fill(0);
+        arena.unshift(row);
+        y++;
+        player.score += rowCount * 10;
+        rowCount *= 2;
+      }
+    }
+
+    function updateScore() {
+      scoreElement.innerText = "Score: " + player.score;
+    }
+
+    let dropCounter = 0;
+    let dropInterval = 1000;
+    let lastTime = 0;
+    let animationFrame;
+
+    function update(time = 0) {
+      const deltaTime = time - lastTime;
+      lastTime = time;
+      dropCounter += deltaTime;
+      if (dropCounter > dropInterval) {
+        playerDrop();
+      }
+
+      context.clearRect(0, 0, canvas.width, canvas.height);
+      drawMatrix(arena, {x:0, y:0});
+      drawMatrix(player.matrix, player.pos);
+
+      animationFrame = requestAnimationFrame(update);
+    }
+
+    document.addEventListener("keydown", event => {
+      if (event.keyCode === 37) {
+        playerMove(-1);
+      } else if (event.keyCode === 39) {
+        playerMove(1);
+      } else if (event.keyCode === 40) {
+        playerDrop();
+      } else if (event.keyCode === 81) {
+        playerRotate(-1);
+      } else if (event.keyCode === 87) {
+        playerRotate(1);
+      }
+    });
+
+    restartBtn.addEventListener("click", () => {
+      player.score = 0;
+      updateScore();
+      gameOverElement.style.display = "none";
+      playerReset();
+      update();
+    });
+
+    const arena = createMatrix(10, 20);
+    const player = {
+      pos: {x:0, y:0},
+      matrix: null,
+      score: 0
+    };
+
     playerReset();
-    // win condition: reach level 12
-    if (level >= 12){
-      triggerWin();
-    }
-  }
-}
-
-/* hard drop */
-function hardDrop(){
-  if (!player.matrix) return;
-  while (!collide(arena, player)) player.pos.y++;
-  player.pos.y--;
-  merge(arena, player);
-  audio.click();
-  arenaSweep();
-  updateHUD();
-  playerReset();
-}
-
-/* move & rotate helpers */
-function move(dir){
-  player.pos.x += dir;
-  if (collide(arena, player)) player.pos.x -= dir;
-  audio.click();
-}
-function rotatePiece(dir){
-  const pos = player.pos.x;
-  rotate(player.matrix, dir);
-  let offset = 1;
-  while (collide(arena, player)){
-    player.pos.x += offset;
-    offset = -(offset + (offset>0?1:-1));
-    if (Math.abs(offset) > player.matrix[0].length){
-      rotate(player.matrix, -dir);
-      player.pos.x = pos;
-      return;
-    }
-  }
-  audio.click();
-}
-
-/* -----------------------
-   HUD & save/load
-   ----------------------- */
-function updateHUD(){
-  scoreLabel.textContent = `Score: ${score}`;
-  highLabel.textContent = `High Score: ${highScore}`;
-  levelLabel.textContent = `Level: ${level}`;
-  linesLabel.textContent = `Lines: ${lines}`;
-  playerLabel.textContent = `Player: ${username || '—'}`;
-}
-
-/* maybe save highscore to supabase */
-async function maybeSaveHighScore(){
-  if (!username) return;
-  try {
-    const { data } = await supabase
-      .from('symbiotic_tetris_scores')
-      .select('score')
-      .eq('username', username)
-      .order('score', { ascending: false })
-      .limit(1);
-    const best = data && data.length ? data[0].score : 0;
-    if (score > best){
-      await supabase.from('symbiotic_tetris_scores').insert([{ username, score }]);
-      highScore = score;
-      updateHUD();
-    }
-  } catch (e) {
-    console.warn('save failed', e);
-  }
-}
-
-async function loadHighScore(){
-  if (!username) return;
-  try {
-    const { data } = await supabase
-      .from('symbiotic_tetris_scores')
-      .select('score')
-      .eq('username', username)
-      .order('score', { ascending: false })
-      .limit(1);
-    highScore = data && data.length ? data[0].score : 0;
-    updateHUD();
-  } catch(e){
-    console.warn(e);
-  }
-}
-
-/* -----------------------
-   overlays (game over, win)
-   ----------------------- */
-function endGame(){
-  running = false;
-  audio.boom();
-  maybeSaveHighScore();
-  goText.textContent = `You scored ${score} — Lines ${lines} — Level ${level}`;
-  gameOverOverlay.style.display = 'flex';
-}
-
-function triggerWin(){
-  running = false;
-  audio.clear();
-  maybeSaveHighScore();
-  winText.textContent = `You reached Level ${level}. Legendary!`;
-  winOverlay.style.display = 'flex';
-}
-
-/* -----------------------
-   reset & start functions
-   ----------------------- */
-function resetAll(){
-  arena = createMatrix(COLS, ROWS);
-  player = { pos:{x:0,y:0}, matrix:null };
-  score = 0; lines = 0; level = 0; dropInterval = 1000; dropCounter = 0; lastTime = performance.now();
-  particles = [];
-  updateHUD();
-}
-
-function startGame(){
-  gameOverOverlay.style.display = 'none';
-  winOverlay.style.display = 'none';
-  resetAll();
-  playerReset();
-  running = true;
-  last = performance.now();
-  lastTime = performance.now();
-  requestAnimationFrame(loop);
-}
-
-/* -----------------------
-   UI events
-   ----------------------- */
-retryBtn.addEventListener('click', ()=>{ startGame(); });
-winRestart.addEventListener('click', ()=>{ startGame(); });
-
-document.addEventListener('keydown', (e)=>{
-  if (!running && (e.key === ' ' || e.code === 'Space') && username){ startGame(); return; }
-  if (e.key === 'ArrowLeft'){ move(-1); }
-  if (e.key === 'ArrowRight'){ move(1); }
-  if (e.key === 'ArrowUp'){ rotatePiece(1); }
-  if (e.key === 'ArrowDown'){ fastDrop = true; }
-  if (e.code === 'Space'){ hardDrop(); }
-});
-document.addEventListener('keyup', (e)=>{ if (e.key === 'ArrowDown') fastDrop = false; });
-
-/* save username */
-saveBtn.addEventListener('click', async ()=>{
-  const v = document.getElementById('username').value.trim();
-  if (!v) return alert('enter username');
-  username = v;
-  localStorage.setItem('symbio_user', username);
-  playerLabel.textContent = `Player: ${username}`;
-  await loadHighScore();
-  // small confirmation
-  saveBtn.textContent = 'Saved';
-  setTimeout(()=> saveBtn.textContent = 'Save', 900);
-});
-
-/* mute toggle */
-muteBtn.addEventListener('click', ()=>{
-  const isMute = muteBtn.textContent === 'Mute';
-  if (isMute){ audio.setMuted(true); muteBtn.textContent = 'Unmute'; }
-  else { audio.setMuted(false); muteBtn.textContent = 'Mute'; }
-});
-
-/* particles canvas sizing */
-function fitParticleCanvas(){
-  pCanvas.width = canvas.clientWidth;
-  pCanvas.height = canvas.clientHeight;
-  pctx.clearRect(0,0,pCanvas.width,pCanvas.height);
-}
-window.addEventListener('resize', ()=>{
-  fit();
-  fitParticleCanvas();
-  draw();
-});
-fit();
-fitParticleCanvas();
-
-/* -----------------------
-   spawn & initial
-   ----------------------- */
-function init(){
-  resetAll();
-  playerReset();
-  if (username) { document.getElementById('username').value = username; playerLabel.textContent = `Player: ${username}`; loadHighScore(); }
-  draw();
-}
-init();
-
-/* Expose small API on window */
-window.startGame = startGame;
-window.hardDrop = hardDrop;
-window.resetGame = resetAll;
-</script>
+    updateScore();
+    update();
+  </script>
 </body>
 </html>
